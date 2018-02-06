@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# mangocli v1.0.1 - A utility for querying Mango's REST API
+# mangocli v1.0.2 - A utility for querying Mango's REST API
 # Author: Adam S. Levy <adam@ia3.io>
 #
 # MIT License
@@ -41,7 +41,7 @@ Options:
 
   -d DATA      DATA to include in the body of a request. Can be specified multiple times.
                Use \`-d @-' to read from stdin or \`-d @filename' to read from a file.
-               Equivalent to \`curl --data="DATA"'. 
+               Equivalent to \`curl --data="DATA"'. Changes default ACTION to POST.
 
   -u PARAM     PARAM is URL encoded data. Can be specified multiple times.
                Using this option will pass all data as URL parameters.
@@ -68,7 +68,7 @@ Arguments:
 
   PATH         The path or route for the request
 
-mangocli v1.0.1 Copywrite (c) 2018 iA3 Inc.
+mangocli v1.0.2 Copyright (c) 2018 iA3 Inc.
 REPORT ISSUES HERE: https://github.com/iA3io/mangocli/issues
 EOF
 }
@@ -82,13 +82,13 @@ error() {
 }
 
 info() {
-  if [[ ! -z "$QUIET" ]] && [[ "$VERB" -ge 1 ]]; then
+  if [[ -z "$QUIET" && "$VERB" -ge 1 ]]; then
     echo "Info: $@" >&2
   fi
 }
 
 debug() {
-  if [[ ! -z "$QUIET" ]] && [[ "$VERB" -ge 2 ]]; then
+  if [[ -z "$QUIET" && "$VERB" -ge 2 ]]; then
     echo "Debug: $@" >&2
   fi
 }
@@ -226,16 +226,19 @@ if [[ ! -z "${URL_DATA[@]}" ]]; then
   CURL_OPTS+=( --get )
 fi
 
-if [[ "$VERB" -gt 1 ]]; then
-  set -x
-fi
 
 CURL_OPTS=( "${CURL_OPTS[@]}" "${HEADERS[@]}" "${URL_DATA[@]}" "${DATA[@]}" )
 
 # Run curl and capture the HTTP response code in a variable and pass the
 # response output through jq to STDOUT
 exec 3>&1
-HTTP_CODE=$(curl --output >($JQ >&3 2>/dev/null) "${CURL_OPTS[@]}" $HOST/rest/$VERSION/$URI)  
+HTTP_CODE=$(
+if [[ "$VERB" -gt 1 ]]; then
+  set -x
+fi
+curl --output >($JQ >&3 2>/dev/null) "${CURL_OPTS[@]}" $HOST/rest/$VERSION/$URI
+set +x
+)
 
 debug "HTTP Response Code: $HTTP_CODE"
 case "$HTTP_CODE" in
