@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# mangocli v1.0.0 - A utility for querying Mango's REST API
+# mangocli v1.0.1 - A utility for querying Mango's REST API
 # Author: Adam S. Levy <adam@ia3.io>
 #
 # MIT License
@@ -68,7 +68,7 @@ Arguments:
 
   PATH         The path or route for the request
 
-mangocli v1.0.0 Copywrite (c) 2018 iA3 Inc.
+mangocli v1.0.1 Copywrite (c) 2018 iA3 Inc.
 REPORT ISSUES HERE: https://github.com/iA3io/mangocli/issues
 EOF
 }
@@ -95,7 +95,7 @@ debug() {
 
 # Option defaults
 VERB="0"
-PRINT="jq --unbuffered --raw-output . "
+JQ="jq --unbuffered --raw-output . "
 VERSION="v2"
 URL_DATA=( --get )
 
@@ -114,7 +114,7 @@ while getopts "$OPTS_SPEC" OPTION; do
       AUTH="$OPTARG"
       ;;
     c)
-      PRINT+=" --compact-output"
+      JQ+=" --compact-output"
       ;;
     C)
       CURL_OPTS+=( $OPTARG )
@@ -178,8 +178,7 @@ if [[ -z "$JWT" ]]; then
   exit 1
 fi
 
-# Use environment variable if no hosts were specified
-
+# Use environment variable if no host was specified
 if [[ -z "$HOST" ]]; then
   info "Using environment variable MANGOCLI_HOST"
   HOST=$MANGOCLI_HOST
@@ -233,8 +232,10 @@ fi
 
 CURL_OPTS=( "${CURL_OPTS[@]}" "${HEADERS[@]}" "${URL_DATA[@]}" "${DATA[@]}" )
 
+# Run curl and capture the HTTP response code in a variable and pass the
+# response output through jq to STDOUT
 exec 3>&1
-HTTP_CODE=$(curl --output >($PRINT >&3 2>/dev/null) "${CURL_OPTS[@]}" $HOST/rest/$VERSION/$URI)  
+HTTP_CODE=$(curl --output >($JQ >&3 2>/dev/null) "${CURL_OPTS[@]}" $HOST/rest/$VERSION/$URI)  
 
 debug "HTTP Response Code: $HTTP_CODE"
 case "$HTTP_CODE" in
