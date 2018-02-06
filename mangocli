@@ -1,0 +1,251 @@
+#!/bin/bash
+
+# mangocli v1.0.0 - A utility for querying Mango's REST API
+# Author: Adam S. Levy <adam@ia3.io>
+#
+# MIT License
+#
+# Copyright (c) 2018 iA3 Inc.
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+usage() {
+  cat >&2 <<EOF
+Usage: mangocli [OPTION...] [ACTION] PATH
+Utility for querying Mango's REST API
+
+Options:
+  -h HOST      HOST is the domain name or IP address of the Mango server.
+               Can be set using the environment variable MANGOCLI_HOST.
+               Defaults to 'http://localhost:8080' if not specified.
+               A HOST without a specified protocol will default to HTTPS.
+
+  -a AUTH      AUTH is the JWT token or the path to a file containing it.
+               Can be set using the environment variable MANGOCLI_AUTH
+
+  -d DATA      DATA to include in the body of a request. Can be specified multiple times.
+               Use \`-d @-' to read from stdin or \`-d @filename' to read from a file.
+               Equivalent to \`curl --data="DATA"'. 
+
+  -u PARAM     PARAM is URL encoded data. Can be specified multiple times.
+               Using this option will pass all data as URL parameters.
+               Use \`-u @-' to read from stdin or \`-u @file' to read from a file.
+               Equivalent to \`curl --get --data-urlencode="PARAM"'.
+
+  -C CURL_OPTS CURL_OPTS is a space separated list of additional options to pass to curl. 
+               Can be specified multiple times.
+
+  -V VERSION   VERSION is the REST API version number: 1 or 2.
+               Can be set using the environment variable MANGOCLI_VERSION.
+               Defaults to v2.
+
+  -c           Compact JSON output. Removes all whitespace.
+
+  -v           Increase verbosity. Once for info, twice for debug output.
+
+  -q           Quiet mode. Suppresses all error, info and debug messages. 
+               Overrides any \`-v' options. 
+
+Arguments:
+  ACTION       The HTTP action: GET, POST, PUT, DELETE
+               Defaults to GET
+
+  PATH         The path or route for the request
+
+mangocli v1.0.0 Copywrite (c) 2018 iA3 Inc.
+REPORT ISSUES HERE: https://github.com/iA3io/mangocli/issues
+EOF
+}
+
+OPTS_SPEC="a:cC:d:h:qu:vV:"
+
+error() {
+  if [[ -z "$QUIET" ]]; then
+    echo "Error: $@" >&2
+  fi
+}
+
+info() {
+  if [[ ! -z "$QUIET" ]] && [[ "$VERB" -ge 1 ]]; then
+    echo "Info: $@" >&2
+  fi
+}
+
+debug() {
+  if [[ ! -z "$QUIET" ]] && [[ "$VERB" -ge 2 ]]; then
+    echo "Debug: $@" >&2
+  fi
+}
+
+# Option defaults
+VERB="0"
+PRINT="jq --unbuffered --raw-output . "
+VERSION="v2"
+URL_DATA=( --get )
+
+# Load environment variables
+if [[ ! -z "$MANGOCLI_AUTH" ]]; then
+  AUTH="$MANGOCLI_AUTH"
+fi
+if [[ ! -z "$MANGOCLI_VERSION" ]]; then
+  VERSION="$MANGOCLI_VERSION"
+fi
+
+# Get options
+while getopts "$OPTS_SPEC" OPTION; do
+  case "$OPTION" in
+    a)
+      AUTH="$OPTARG"
+      ;;
+    c)
+      PRINT+=" --compact-output"
+      ;;
+    C)
+      CURL_OPTS+=( $OPTARG )
+      ;;
+    d)
+      DATA+=( --data "$OPTARG" )
+      ;;
+    h)
+      HOST="$OPTARG"
+      ;;
+    q)
+      QUIET="QUIET"
+      ;;
+    u)
+      URL_DATA+=(--data-urlencode "$OPTARG")
+      ;;
+    v)
+      VERB=$(( $VERB + 1 ))
+      ;;
+    V)
+      OPTARG="${OPTARG#V}"
+      VERSION="v${OPTARG#v}"
+      ;;
+    ?)
+      error "Unknown option"
+      usage
+      exit 1
+  esac
+done
+shift "$(( $OPTIND - 1 ))"
+
+# Validate args
+if [[ $# -lt 1 ]] || [[ $# -gt 2 ]]; then
+  if [[ $# -lt 1 ]]; then
+    error "Too few arguments"
+  else
+    error "Too many arguments"
+  fi
+  usage
+  exit 1
+fi
+
+# Parse args
+ACTION="GET"
+if [[ $# -eq 2 ]]; then
+  ACTION="$(echo $1 | tr '[:lower:]' '[:upper:]')"
+  shift
+fi
+URI="$1"
+
+# Parse AUTH
+if [[ -f "$AUTH" ]]; then
+  info "Loading JWT token from file $AUTH"
+  JWT="$(cat $AUTH)"
+else
+  JWT="$AUTH"
+fi
+# Validate JWT
+if [[ -z "$JWT" ]]; then
+  error "Empty JWT auth token"
+  exit 1
+fi
+
+# Use environment variable if no hosts were specified
+
+if [[ -z "$HOST" ]]; then
+  info "Using environment variable MANGOCLI_HOST"
+  HOST=$MANGOCLI_HOST
+fi
+# Set default host if none was specified
+if [[ -z "$HOST" ]]; then
+  HOST="http://localhost:8080"
+fi
+
+# Set headers
+HEADERS=(-H "Authorization: Bearer $JWT")
+if [[ ! -z "${DATA[@]}" ]]; then
+  HEADERS+=(-H "Content-Type: application/json")
+fi
+
+# Default curl options
+CURL_OPTS+=( --silent 
+             --show-error 
+             --no-buffer 
+             --no-keepalive 
+             --proto-default https 
+             --write-out "%{http_code}"
+)
+
+# Set curl verbosity
+if [[ "$VERB" -gt 0 ]]; then
+  CURL_OPTS+=(-v)
+fi
+
+case "$ACTION" in
+  GET)
+    ;;
+  POST|PUT|DELETE)
+    CURL_OPTS+=( -X "$ACTION" )
+    ;;
+  *)
+    error "Unsupported ACTION: '$ACTION'"
+    usage
+    exit 1
+    ;;
+esac
+
+# Send all data as URL parameters
+if [[ ! -z "${URL_DATA[@]}" ]]; then
+  CURL_OPTS+=( --get )
+fi
+
+if [[ "$VERB" -gt 1 ]]; then
+  set -x
+fi
+
+CURL_OPTS=( "${CURL_OPTS[@]}" "${HEADERS[@]}" "${URL_DATA[@]}" "${DATA[@]}" )
+
+exec 3>&1
+HTTP_CODE=$(curl --output >($PRINT >&3 2>/dev/null) "${CURL_OPTS[@]}" $HOST/rest/$VERSION/$URI)  
+
+debug "HTTP Response Code: $HTTP_CODE"
+case "$HTTP_CODE" in
+  200|201|202|204)
+    exit 0
+    ;;
+  401)
+    error "HTTP/1.1 401 Unauthorized"
+    exit 2
+    ;;
+  *)
+    exit 2
+    ;;
+esac
