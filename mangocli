@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# mangocli v1.0.2 - A utility for querying Mango's REST API
+# mangocli v1.0.3 - A utility for querying Mango's REST API
 # Author: Adam S. Levy <adam@ia3.io>
 #
 # MIT License
@@ -68,7 +68,7 @@ Arguments:
 
   PATH         The path or route for the request
 
-mangocli v1.0.2 Copyright (c) 2018 iA3 Inc.
+mangocli v1.0.3 Copyright (c) 2018 iA3 Inc.
 REPORT ISSUES HERE: https://github.com/iA3io/mangocli/issues
 EOF
 }
@@ -234,10 +234,15 @@ CURL_OPTS=( "${CURL_OPTS[@]}" "${HEADERS[@]}" "${URL_DATA[@]}" "${DATA[@]}" )
 exec 3>&1
 HTTP_CODE=$(
 if [[ "$VERB" -gt 1 ]]; then
+  if ! echo $- | grep x; then
+    opt="x"
+  fi
   set -x
 fi
 curl --output >($JQ >&3 2>/dev/null) "${CURL_OPTS[@]}" $HOST/rest/$VERSION/$URI
-set +x
+if [[ "$VERB" -gt 1 ]]; then
+  set +$opt
+fi
 )
 
 debug "HTTP Response Code: $HTTP_CODE"

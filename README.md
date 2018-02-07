@@ -1,5 +1,5 @@
 # mangocli
-mangocli v1.0.2 - A utility for querying Mango's REST API
+mangocli v1.0.3 - A utility for querying Mango's REST API
 
 Author: Adam S. Levy <adam@ia3.io>
 
