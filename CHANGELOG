@@ -1,0 +1,11 @@
+v1.1.0
+Added the -L LIMIT option
+
+v1.0.3
+Respect previously set bash options
+
+v1.0.2 
+Updated manual, fixed quiet bug, limited -x output
+
+v1.0.1 
+Small refactor and improved comments

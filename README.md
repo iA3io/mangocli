@@ -1,5 +1,5 @@
 # mangocli
-mangocli v1.0.3 - A utility for querying Mango's REST API
+mangocli v1.1.0 - A utility for querying Mango's REST API
 
 Author: Adam S. Levy <adam@ia3.io>
 
@@ -63,6 +63,7 @@ manual for more information.
 ## Manual
 ```
 Usage: mangocli [OPTION...] [ACTION] PATH
+Utility for querying Mango's REST API
 
 Options:
   -h HOST      HOST is the domain name or IP address of the Mango server.
@@ -71,7 +72,7 @@ Options:
                A HOST without a specified protocol will default to HTTPS.
 
   -a AUTH      AUTH is the JWT token or the path to a file containing it.
-               Can be set using the environment variable MANGOCLI_AUTH
+               Can be set using the environment variable MANGOCLI_AUTH.
 
   -d DATA      DATA to include in the body of a request. Can be specified multiple times.
                Use `-d @-' to read from stdin or `-d @filename' to read from a file.
@@ -85,9 +86,13 @@ Options:
   -C CURL_OPTS CURL_OPTS is a space separated list of additional options to pass to curl. 
                Can be specified multiple times.
 
-  -V VERSION   VERSION is the REST API version number: 1 or 2.
+  -V VERSION   VERSION is the REST API version number: 1 or 2. Defaults to v2.
                Can be set using the environment variable MANGOCLI_VERSION.
-               Defaults to v2.
+
+  -L LIMIT     LIMIT is the maximum number of items Mango will return.
+               Specifying this will append `?limit(LIMIT)' to the query.
+               Only applies to GET requests, otherwise it is ignored.
+               Can be set using the environment variable MANGOCLI_LIMIT.
 
   -c           Compact JSON output. Removes all whitespace.
 
@@ -98,9 +103,12 @@ Options:
 
 Arguments:
   ACTION       The HTTP action: GET, POST, PUT, DELETE
-               Defaults to GET.
+               Defaults to GET
 
   PATH         The path or route for the request
+
+mangocli v1.1.0 Copyright (c) 2018 iA3 Inc.
+REPORT ISSUES HERE: https://github.com/iA3io/mangocli/issues
 ```
 
 ## License and Copywrite

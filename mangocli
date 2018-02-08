@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# mangocli v1.0.3 - A utility for querying Mango's REST API
+# mangocli v1.1.0 - A utility for querying Mango's REST API
 # Author: Adam S. Levy <adam@ia3.io>
 #
 # MIT License
@@ -37,7 +37,7 @@ Options:
                A HOST without a specified protocol will default to HTTPS.
 
   -a AUTH      AUTH is the JWT token or the path to a file containing it.
-               Can be set using the environment variable MANGOCLI_AUTH
+               Can be set using the environment variable MANGOCLI_AUTH.
 
   -d DATA      DATA to include in the body of a request. Can be specified multiple times.
                Use \`-d @-' to read from stdin or \`-d @filename' to read from a file.
@@ -51,9 +51,13 @@ Options:
   -C CURL_OPTS CURL_OPTS is a space separated list of additional options to pass to curl. 
                Can be specified multiple times.
 
-  -V VERSION   VERSION is the REST API version number: 1 or 2.
+  -V VERSION   VERSION is the REST API version number: 1 or 2. Defaults to v2.
                Can be set using the environment variable MANGOCLI_VERSION.
-               Defaults to v2.
+
+  -L LIMIT     LIMIT is the maximum number of items Mango will return.
+               Specifying this will append \`?limit(LIMIT)' to the query.
+               Only applies to GET requests, otherwise it is ignored.
+               Can be set using the environment variable MANGOCLI_LIMIT.
 
   -c           Compact JSON output. Removes all whitespace.
 
@@ -68,12 +72,12 @@ Arguments:
 
   PATH         The path or route for the request
 
-mangocli v1.0.3 Copyright (c) 2018 iA3 Inc.
+mangocli v1.1.0 Copyright (c) 2018 iA3 Inc.
 REPORT ISSUES HERE: https://github.com/iA3io/mangocli/issues
 EOF
 }
 
-OPTS_SPEC="a:cC:d:h:qu:vV:"
+OPTS_SPEC="a:cC:d:h:L:qu:vV:"
 
 error() {
   if [[ -z "$QUIET" ]]; then
@@ -106,6 +110,9 @@ fi
 if [[ ! -z "$MANGOCLI_VERSION" ]]; then
   VERSION="$MANGOCLI_VERSION"
 fi
+if [[ ! -z "$MANGOCLI_LIMIT" ]]; then
+  LIMIT="/?limit($MANGOCLI_LIMIT)"
+fi
 
 # Get options
 while getopts "$OPTS_SPEC" OPTION; do
@@ -124,6 +131,9 @@ while getopts "$OPTS_SPEC" OPTION; do
       ;;
     h)
       HOST="$OPTARG"
+      ;;
+    L)
+      LIMIT="/?limit($OPTARG)"
       ;;
     q)
       QUIET="QUIET"
@@ -163,7 +173,7 @@ if [[ $# -eq 2 ]]; then
   ACTION="$(echo $1 | tr '[:lower:]' '[:upper:]')"
   shift
 fi
-URI="$1"
+ENDPOINT="$1"
 
 # Parse AUTH
 if [[ -f "$AUTH" ]]; then
@@ -212,6 +222,7 @@ case "$ACTION" in
   GET)
     ;;
   POST|PUT|DELETE)
+    LIMIT=
     CURL_OPTS+=( -X "$ACTION" )
     ;;
   *)
@@ -229,6 +240,8 @@ fi
 
 CURL_OPTS=( "${CURL_OPTS[@]}" "${HEADERS[@]}" "${URL_DATA[@]}" "${DATA[@]}" )
 
+URI=$HOST/rest/$VERSION/$ENDPOINT$LIMIT
+
 # Run curl and capture the HTTP response code in a variable and pass the
 # response output through jq to STDOUT
 exec 3>&1
@@ -239,7 +252,7 @@ if [[ "$VERB" -gt 1 ]]; then
   fi
   set -x
 fi
-curl --output >($JQ >&3 2>/dev/null) "${CURL_OPTS[@]}" $HOST/rest/$VERSION/$URI
+curl --output >($JQ >&3 2>/dev/null) "${CURL_OPTS[@]}" $URI
 if [[ "$VERB" -gt 1 ]]; then
   set +$opt
 fi
