@@ -1,8 +1,12 @@
 #!/bin/bash
 
-# mangocli v1.1.0 - A utility for querying Mango's REST API
-# Author: Adam S. Levy <adam@ia3.io>
-#
+PROGRAM_NAME="mangocli"
+PROGRAM_VERSION="v1.1.1"
+PROGRAM_DESCRIPTION="Utility for querying Mango's REST API"
+PROGRAM_AUTHOR="Adam S. Levy <adam@ia3.io>"
+PROGRAM_COPYRIGHT="Copyright (c) 2018 iA3 Inc."
+PROGRAM_ISSUES="https://github.com/iA3io/mangocli/issues"
+
 # MIT License
 #
 # Copyright (c) 2018 iA3 Inc.
@@ -27,8 +31,8 @@
 
 usage() {
   cat >&2 <<EOF
-Usage: mangocli [OPTION...] [ACTION] PATH
-Utility for querying Mango's REST API
+Usage: $PROGRAM_NAME [OPTION...] [ACTION] PATH
+$PROGRAM_DESCRIPTION
 
 Options:
   -h HOST      HOST is the domain name or IP address of the Mango server.
@@ -72,8 +76,8 @@ Arguments:
 
   PATH         The path or route for the request
 
-mangocli v1.1.0 Copyright (c) 2018 iA3 Inc.
-REPORT ISSUES HERE: https://github.com/iA3io/mangocli/issues
+$PROGRAM_NAME $PROGRAM_VERSION $PROGRAM_COPYRIGHT
+REPORT ISSUES HERE: $PROGRAM_ISSUES
 EOF
 }
 
