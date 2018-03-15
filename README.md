@@ -1,5 +1,5 @@
 # mangocli
-mangocli v1.1.0 - A utility for querying Mango's REST API
+mangocli v1.1.2 - A utility for querying Mango's REST API
 
 Author: Adam S. Levy <adam@ia3.io>
 
@@ -107,7 +107,7 @@ Arguments:
 
   PATH         The path or route for the request
 
-mangocli v1.1.0 Copyright (c) 2018 iA3 Inc.
+mangocli v1.1.2 Copyright (c) 2018 iA3 Inc.
 REPORT ISSUES HERE: https://github.com/iA3io/mangocli/issues
 ```
 

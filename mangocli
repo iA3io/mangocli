@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PROGRAM_NAME="mangocli"
-PROGRAM_VERSION="v1.1.1"
+PROGRAM_VERSION="v1.1.2"
 PROGRAM_DESCRIPTION="Utility for querying Mango's REST API"
 PROGRAM_AUTHOR="Adam S. Levy <adam@ia3.io>"
 PROGRAM_COPYRIGHT="Copyright (c) 2018 iA3 Inc."
@@ -105,7 +105,6 @@ debug() {
 VERB="0"
 JQ="jq --unbuffered --raw-output . "
 VERSION="v2"
-URL_DATA=( --get )
 
 # Load environment variables
 if [[ ! -z "$MANGOCLI_AUTH" ]]; then
